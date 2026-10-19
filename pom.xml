@@ -156,14 +156,6 @@
             <version>5.5.13.3</version>
         </dependency>
 
-        <!-- ============ GRAPHQL (по избор) ============ -->
-
-        <dependency>
-            <groupId>com.netflix.graphql.dgs.codegen</groupId>
-            <artifactId>graphql-dgs-codegen-gradle</artifactId>
-            <version>7.0.3</version>
-        </dependency>
-
         <!-- ============ СЪРВЪРНИ АПИ-та ============ -->
 
         <dependency>
@@ -221,11 +213,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Selenium за UI тестове -->
+        <!-- Selenium за UI тестове (само за тестове, за да не влиза в приложението) -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>4.27.0</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- Chrome DevTools интеграция за Selenium -->
@@ -233,6 +226,7 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-devtools-v131</artifactId>
             <version>4.27.0</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- WebDriverManager за управление на драйвери -->

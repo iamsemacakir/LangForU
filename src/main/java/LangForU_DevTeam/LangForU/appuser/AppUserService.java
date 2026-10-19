@@ -1,5 +1,6 @@
 package LangForU_DevTeam.LangForU.appuser;
 
+import LangForU_DevTeam.LangForU.config.AppLinks;
 import LangForU_DevTeam.LangForU.courses.Course;
 import LangForU_DevTeam.LangForU.email.EmailService;
 import LangForU_DevTeam.LangForU.email.EmailTemplateService;
@@ -346,7 +347,7 @@ public class AppUserService implements UserDetailsService {
             throw new RuntimeException("Възникна грешка при запазването на токена за администратора: " + e.getMessage());
         }
 
-        String link = "http://localhost:8080/admin/confirmAdmin?token=" + token;
+        String link = AppLinks.to("/admin/confirmAdmin?token=" + token);
 
         try {
             // Генерира и изпраща имейл с линк за активация.

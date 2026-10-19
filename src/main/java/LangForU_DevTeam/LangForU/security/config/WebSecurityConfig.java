@@ -50,7 +50,8 @@ public class WebSecurityConfig {
                                 "/tag/**", "/blog/subscribe", "/category/**", "/contact", "/login", "/register",
                                 "/courses/view/**", "/registration/confirm", "/confirmedRegistration",
                                 "/registrationSuccess", "/admin/confirmAdmin/**", // <-- Преместено тук
-                                "/chat", "/chat/send")
+                                "/chat", "/chat/send",
+                                "/ping") // Проверка за работа на сайта (keep-alive при хостинга).
                         .permitAll()
 
                         // --- Изисква потребителят да има роля 'ADMIN' за достъп до всички пътища, които започват с /admin/. ---

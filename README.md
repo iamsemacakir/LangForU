@@ -101,11 +101,18 @@ Main entities:
 git clone https://github.com/your-username/LangForU.git
 cd LangForU
 
-# 2. Build project
+# 2. Add your settings (database, email, API keys)
+cp .env.example .env   # then fill in the values
+
+# 3. Build project
 mvn clean install
 
-# 3. Run Spring Boot app
+# 4. Run Spring Boot app
 mvn spring-boot:run
 
-# 4. Access in browser
+# 5. Access in browser
 http://localhost:8080
+```
+
+## 🌍 Free Hosting
+The live site runs for free on Render + Neon + Brevo + Gemini. See **[DEPLOY.md](DEPLOY.md)** for the step-by-step guide.

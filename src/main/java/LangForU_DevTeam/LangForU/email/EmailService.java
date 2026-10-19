@@ -2,9 +2,10 @@ package LangForU_DevTeam.LangForU.email;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -16,12 +17,17 @@ import org.springframework.stereotype.Service;
  * за същинското изпращане.
  */
 @Service
-@AllArgsConstructor // Lombok: Генерира конструктор с всички полета за dependency injection.
+@RequiredArgsConstructor // Lombok: Генерира конструктор с всички final полета за dependency injection.
 public class EmailService implements EmailSender {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender emailSender; // Компонент на Spring за изпращане на имейли.
     private final EmailTemplateService emailTemplateService; // Персонализиран сервиз за генериране на HTML съдържание за имейли.
+
+    // Имейл на изпращача. Задава се с променливата на средата MAIL_FROM
+    // (трябва да е потвърден подател при доставчика на имейли, напр. Brevo).
+    @Value("${app.mail.from:langforu.softdev@gmail.com}")
+    private String fromAddress = "langforu.softdev@gmail.com";
 
     /**
      * Основен метод за изпращане на имейл.
@@ -41,7 +47,7 @@ public class EmailService implements EmailSender {
             helper.setText(email, true); // Вторият параметър 'true' указва, че съдържанието е HTML.
             helper.setTo(to);
             helper.setSubject("LangForU"); // Тема на имейла.
-            helper.setFrom("langforu.softdev@gmail.com"); // Имейл на изпращача.
+            helper.setFrom(fromAddress); // Имейл на изпращача.
             emailSender.send(mimeMessage);
         } catch (MessagingException e) {
             // При грешка, записваме в логовете и хвърляме изключение, за да сигнализираме за проблема.

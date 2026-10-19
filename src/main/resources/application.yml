@@ -1,15 +1,24 @@
+# Всички тайни (пароли, ключове) се четат от променливи на средата.
+# Локално: копирайте .env.example като .env и попълнете стойностите (.env не се качва в Git).
+# В Render: задайте същите променливи в Environment на услугата. Вижте DEPLOY.md.
+
 server:
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
 
 spring:
+  config:
+    # Зарежда локалния .env файл, ако съществува (само за разработка).
+    import: optional:file:.env[.properties]
   datasource:
-    password: {password}
-    url: {someURL}
-    username: postgres
-    profiles:
-      active: default
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/langforu}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+    hikari:
+      # Малък пул от връзки, за да се пести памет на безплатния сървър.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,7 +26,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: ${SHOW_SQL:false}
   resources:
     static-locations: classpath:/static/
   mvc:
@@ -28,10 +37,12 @@ spring:
       static-locations: classpath:/static/
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: {email}
-    password: {secretKeyForEmail}
+    # По подразбиране Gmail. В Render безплатният план блокира порт 587,
+    # затова там се ползва Brevo: MAIL_HOST=smtp-relay.brevo.com, MAIL_PORT=2525.
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
 
     properties:
       mail:
@@ -45,11 +56,30 @@ spring:
           timeout: 3000
           writetimeout: 5000
 
+app:
+  # Публичният адрес на сайта, използван в линковете в имейлите.
+  # В Render се взима автоматично от RENDER_EXTERNAL_URL; APP_BASE_URL е нужен само при собствен домейн.
+  base-url: ${APP_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
+  mail:
+    # Имейлът, от който се изпращат писмата (трябва да е потвърден в Brevo).
+    from: ${MAIL_FROM:langforu.softdev@gmail.com}
+  admin:
+    # Парола на администратора (langforu.softdev@gmail.com), създаван при първо стартиране.
+    password: ${ADMIN_PASSWORD:}
+  demo-user:
+    # По желание: парола на демо потребителя. Ако е празна, той не се създава.
+    password: ${DEMO_USER_PASSWORD:}
+
 openai:
   api:
-    key: {secretKeyForOpenAI}
-    url: https://api.openai.com/v1
+    # Работи с всеки OpenAI-съвместим доставчик, напр. безплатния Gemini API:
+    # OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai
+    key: ${OPENAI_API_KEY:}
+    url: ${OPENAI_API_URL:https://api.openai.com/v1}
+    model: ${OPENAI_API_MODEL:gpt-4o-mini}
 
 encryption:
-  key: '{key}'
-  salt: '{salt}'
+  # Ключът може да е произволен текст; солта трябва да е в hex формат (0-9, a-f), напр. 16 символа.
+  # След пускане на сайта НЕ ги променяйте, иначе вече криптираните данни няма да могат да се прочетат.
+  key: ${ENCRYPTION_KEY}
+  salt: ${ENCRYPTION_SALT}

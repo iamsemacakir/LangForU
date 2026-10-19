@@ -3,6 +3,7 @@ package LangForU_DevTeam.LangForU.registration;
 import LangForU_DevTeam.LangForU.appuser.AppUser;
 import LangForU_DevTeam.LangForU.appuser.AppUserRole;
 import LangForU_DevTeam.LangForU.appuser.AppUserService;
+import LangForU_DevTeam.LangForU.config.AppLinks;
 import LangForU_DevTeam.LangForU.email.EmailSender;
 import LangForU_DevTeam.LangForU.email.EmailTemplateService;
 import LangForU_DevTeam.LangForU.registration.token.ConfirmationToken;
@@ -57,7 +58,7 @@ public class RegistrationService {
         );
 
         // 3. Генерира линк за потвърждение и изпраща имейл.
-        String link = "http://localhost:8080/registration/confirm?token=" + token;
+        String link = AppLinks.to("/registration/confirm?token=" + token);
         emailSender.send(
                 request.getEmail(),
                 emailTemplateService.buildEmail_Registration(request.getName(), link)

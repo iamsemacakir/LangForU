@@ -6,10 +6,12 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -26,19 +28,24 @@ public class CertificateGeneratorService {
     private final EncryptionService encryptionService;
     private final BaseFont baseFont;
     private final BaseFont boldFont;
+    private final byte[] logoBytes;
 
     /**
-     * Конструктор за инжектиране на зависимости и инициализация на ресурси (шрифтове).
+     * Конструктор за инжектиране на зависимости и инициализация на ресурси (шрифтове и лого).
      *
      * @param encryptionService Сервиз за криптиране/декриптиране.
      */
     public CertificateGeneratorService(EncryptionService encryptionService) {
         this.encryptionService = encryptionService;
         try {
-            // Зареждаме шрифтовете веднъж при създаването на бийна, за да избегнем повторно четене от диска.
+            // Зареждаме шрифтовете веднъж при създаването на бийна, за да избегнем повторно четене.
+            // Четат се от classpath, за да работят и когато приложението е пуснато като JAR (на хостинг).
             // IDENTITY_H позволява Unicode (кирилица), а EMBEDDED вгражда шрифта в PDF файла.
-            this.baseFont = BaseFont.createFont("src/main/resources/static/fonts/FreeSerif.otf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            this.boldFont = BaseFont.createFont("src/main/resources/static/fonts/FreeSerifBold.otf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            this.baseFont = BaseFont.createFont("FreeSerif.otf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED,
+                    BaseFont.CACHED, readClasspathBytes("static/fonts/FreeSerif.otf"), null);
+            this.boldFont = BaseFont.createFont("FreeSerifBold.otf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED,
+                    BaseFont.CACHED, readClasspathBytes("static/fonts/FreeSerifBold.otf"), null);
+            this.logoBytes = readClasspathBytes("static/img/logo/logo.png");
         } catch (DocumentException | IOException e) {
             logger.error("Критична грешка: Неуспешно зареждане на PDF шрифтове. Сертификати няма да могат да бъдат генерирани.", e);
             throw new RuntimeException("Грешка при зареждане на шрифтове", e);
@@ -110,7 +117,7 @@ public class CertificateGeneratorService {
         Font footerFont = new Font(baseFont, 10, Font.NORMAL, BaseColor.WHITE);
 
         // --- Лого ---
-        Image logo = Image.getInstance("src/main/resources/static/img/logo/logo.png");
+        Image logo = Image.getInstance(logoBytes);
         logo.scaleToFit(100, 100);
         logo.setAlignment(Image.ALIGN_CENTER);
         document.add(logo);
@@ -141,6 +148,15 @@ public class CertificateGeneratorService {
 
         document.close();
         return outputStream.toByteArray();
+    }
+
+    /**
+     * Прочита файл от classpath (src/main/resources) като масив от байтове.
+     */
+    private static byte[] readClasspathBytes(String path) throws IOException {
+        try (InputStream in = new ClassPathResource(path).getInputStream()) {
+            return in.readAllBytes();
+        }
     }
 
     /**
