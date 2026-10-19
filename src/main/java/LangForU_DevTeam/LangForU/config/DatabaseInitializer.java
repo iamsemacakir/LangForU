@@ -19,6 +19,7 @@ import LangForU_DevTeam.LangForU.registration.token.ConfirmationTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,15 @@ public class DatabaseInitializer {
 
     @Autowired
     private AppUserService appUserService;
+
+    // Паролите на началните акаунти се задават чрез променливи на средата (ADMIN_PASSWORD,
+    // DEMO_USER_PASSWORD), а не в кода, защото кодът е публичен в GitHub.
+    // Ако паролата не е зададена, съответният акаунт не се създава.
+    @Value("${app.admin.password:}")
+    private String adminPassword;
+
+    @Value("${app.demo-user.password:}")
+    private String demoUserPassword;
 
     @Bean
     public CommandLineRunner initDatabase(AppUserRepository appUserRepository,
@@ -65,10 +75,14 @@ public class DatabaseInitializer {
         appUserRepository.findByEmail("langforu.softdev@gmail.com").ifPresentOrElse(
                 admin -> logger.info("Admin user already exists. Skipping initialization."),
                 () -> {
+                    if (adminPassword == null || adminPassword.isBlank()) {
+                        logger.warn("ADMIN_PASSWORD не е зададена – администраторският акаунт не е създаден.");
+                        return;
+                    }
                     try {
                         AppUser adminUser = new AppUser(
                                 "langforu.softdev@gmail.com",
-                                passwordEncoder.encode("Admin123"),
+                                passwordEncoder.encode(adminPassword),
                                 "Админ",
                                 LocalDate.of(2002, 3, 6),
                                 "female",
@@ -94,10 +108,14 @@ public class DatabaseInitializer {
         appUserRepository.findByEmail("semayasharova@gmail.com").ifPresentOrElse(
                 user -> logger.info("Ordinary user already exists. Skipping initialization."),
                 () -> {
+                    if (demoUserPassword == null || demoUserPassword.isBlank()) {
+                        logger.info("DEMO_USER_PASSWORD не е зададена – демо потребителят не е създаден.");
+                        return;
+                    }
                     try {
                         AppUser ordinaryUser = new AppUser(
                                 "semayasharova@gmail.com",
-                                passwordEncoder.encode("Sema1234"),
+                                passwordEncoder.encode(demoUserPassword),
                                 "Сема Яшарова",
                                 LocalDate.of(2002, 3, 6),
                                 "female",

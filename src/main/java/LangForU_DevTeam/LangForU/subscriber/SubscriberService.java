@@ -3,6 +3,7 @@ package LangForU_DevTeam.LangForU.subscriber;
 import LangForU_DevTeam.LangForU.appuser.AppUser;
 import LangForU_DevTeam.LangForU.appuser.AppUserService;
 import LangForU_DevTeam.LangForU.blog.Blog;
+import LangForU_DevTeam.LangForU.config.AppLinks;
 import LangForU_DevTeam.LangForU.email.EmailService;
 import LangForU_DevTeam.LangForU.email.EmailTemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +85,7 @@ public class SubscriberService {
         }
 
         // Генерира линк към новата публикация и създава съдържанието на имейла чрез шаблон.
-        String link = "http://localhost:8080/blog/detail/" + blog.getId();
+        String link = AppLinks.to("/blog/detail/" + blog.getId());
         String emailContent = emailTemplateService.buildEmail_NewBlogNotification(appUser.getName(), blog.getName(), link);
 
         // Изпраща имейла.

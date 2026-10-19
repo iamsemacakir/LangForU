@@ -1,0 +1,48 @@
+# Render Blueprint: създава безплатния уеб сървър за LangForU.
+# В Render: New → Blueprint → изберете това хранилище. Стойностите със "sync: false"
+# ще бъдат поискани при създаването. Подробно ръководство: DEPLOY.md
+services:
+  - type: web
+    name: langforu
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # --- База данни (Neon) ---
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # --- Имейли (Brevo, порт 2525, защото Render блокира 587 на безплатния план) ---
+      - key: MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+      # --- Виртуален асистент Sevi (безплатен Gemini API, OpenAI-съвместим) ---
+      - key: OPENAI_API_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: OPENAI_API_MODEL
+        value: gemini-3.8-flash
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # --- Администратор (създава се при първо стартиране) ---
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # --- Криптиране (ЕГН в сертификатите) ---
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: ENCRYPTION_SALT
+        sync: false

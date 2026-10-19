@@ -1,6 +1,7 @@
 package LangForU_DevTeam.LangForU.taskService;
 
 import LangForU_DevTeam.LangForU.appuser.AppUserService;
+import LangForU_DevTeam.LangForU.config.AppLinks;
 import LangForU_DevTeam.LangForU.email.EmailService;
 import LangForU_DevTeam.LangForU.email.EmailTemplateService;
 import LangForU_DevTeam.LangForU.lections.Lection;
@@ -63,7 +64,7 @@ public class ScheduledTaskService {
                 String lectionTitle = lection.getName();
 
                 // Генериране на линк към новата лекция
-                String link = "http://localhost:8080/lections/view/" + lection.getId();
+                String link = AppLinks.to("/lections/view/" + lection.getId());
 
                 // Създаване на съдържание за имейл чрез шаблон
                 String emailContent = emailTemplateService.buildEmail_NewLectionNotification(

@@ -4,6 +4,8 @@ import LangForU_DevTeam.LangForU.courses.Course;
 import LangForU_DevTeam.LangForU.courses.CourseService;
 import LangForU_DevTeam.LangForU.lections.Lection;
 import lombok.AllArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,9 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -148,14 +147,16 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "Невалиден пол. Моля, използвайте 'male' или 'female'."));
         }
         try {
-            Path avatarDir = Paths.get("src/main/resources/static/img/avatars/" + gender.toLowerCase());
-            if (!Files.exists(avatarDir) || !Files.isDirectory(avatarDir)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Директорията с аватари не е намерена."));
-            }
+            // Аватарите се четат от classpath, за да работи и когато приложението е пуснато като JAR
+            // (напр. на хостинг), а не само от изходния код.
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath:static/img/avatars/" + gender.toLowerCase() + "/*");
 
-            List<String> avatars = Files.list(avatarDir)
-                    .filter(Files::isRegularFile)
-                    .map(path -> path.getFileName().toString())
+            List<String> avatars = Arrays.stream(resources)
+                    .map(Resource::getFilename)
+                    .filter(Objects::nonNull)
+                    .filter(name -> !name.isBlank())
+                    .sorted()
                     .collect(Collectors.toList());
 
             if (avatars.isEmpty()) {

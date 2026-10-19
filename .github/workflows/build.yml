@@ -1,0 +1,86 @@
+# Автоматична проверка при всяка промяна: компилира проекта, пуска тестовете
+# и стартира Docker образа (същия, който ползва Render), за да провери, че сайтът тръгва.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Тестове
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      # Пускат се unit и integration тестовете (*Test). Selenium E2E тестовете (*Tests)
+      # изискват работещ сайт и браузър, затова не се пускат тук.
+      - name: Unit и integration тестове
+        run: mvn -B test -Dtest='*Test'
+
+  docker:
+    name: Docker образ и стартиране
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: langforu
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Изграждане на Docker образа
+        run: docker build -t langforu .
+
+      - name: Стартиране и проверка на сайта
+        run: |
+          set -euo pipefail
+          docker run -d --name app --network host \
+            -e DB_URL=jdbc:postgresql://localhost:5432/langforu \
+            -e DB_USERNAME=postgres \
+            -e DB_PASSWORD=postgres \
+            -e ENCRYPTION_KEY=ci-only-key \
+            -e ENCRYPTION_SALT=deadbeefcafebabe \
+            -e ADMIN_PASSWORD=ci-only-password \
+            langforu
+
+          # Изчакване сайтът да стартира (до 3 минути)
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/ping > /dev/null 2>&1; then break; fi
+            sleep 3
+          done
+
+          # /ping отговаря без вход
+          test "$(curl -fsS http://localhost:8080/ping)" = "ok"
+
+          # Началната страница се зарежда
+          curl -fsS -o /dev/null http://localhost:8080/
+
+          # Вход като администратор и списък с аватари (четат се от вътрешността на JAR файла)
+          csrf=$(curl -fsS -c cookies.txt http://localhost:8080/login \
+            | grep -o 'name="_csrf" value="[^"]*"' | head -1 | sed 's/.*value="//; s/"$//')
+          curl -fsS -b cookies.txt -c cookies.txt -o /dev/null -X POST http://localhost:8080/login \
+            --data-urlencode "email=langforu.softdev@gmail.com" \
+            --data-urlencode "password=ci-only-password" \
+            --data-urlencode "_csrf=$csrf"
+          curl -fsS -b cookies.txt http://localhost:8080/avatar/male | tee avatars.json
+          echo
+          grep -q '\.png' avatars.json
+
+      - name: Логове на приложението
+        if: always()
+        run: docker logs app 2>&1 | tail -n 200 || true
