@@ -13,8 +13,8 @@ jobs:
     name: Тестове
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -22,7 +22,43 @@ jobs:
       # Пускат се unit и integration тестовете (*Test). Selenium E2E тестовете (*Tests)
       # изискват работещ сайт и браузър, затова не се пускат тук.
       - name: Unit и integration тестове
-        run: mvn -B test -Dtest='*Test'
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -B test -Dtest='*Test' -Dsurefire.failIfNoSpecifiedTests=false 2>&1 | tee mvn-test.log
+
+      # При грешка: показва кои тестове са паднали директно в GitHub (като annotations).
+      - name: Списък на падналите тестове
+        if: failure()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          def esc(s):
+              return s.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+
+          failed = []
+          for f in sorted(glob.glob('target/surefire-reports/TEST-*.xml')):
+              for tc in ET.parse(f).getroot().iter('testcase'):
+                  for kind in ('failure', 'error'):
+                      el = tc.find(kind)
+                      if el is not None:
+                          name = f"{tc.get('classname')}.{tc.get('name')}"
+                          msg = (el.get('message') or el.get('type') or '').strip()
+                          first_line = (el.text or '').strip().splitlines()[:1]
+                          failed.append((name, kind, msg[:400], first_line[0][:300] if first_line else ''))
+
+          if failed:
+              print('::error title=Паднали тестове (' + str(len(failed)) + ')::' + esc('\n'.join(n for n, *_ in failed)))
+              for name, kind, msg, line in failed[:8]:
+                  print(f'::error title={name}::' + esc(f'{kind}: {msg}\n{line}'))
+          else:
+              print('::error title=Няма отчети от тестовете::Вероятно компилацията на тестовете се е провалила.')
+          PY
+          grep -E '^\[ERROR\] .+' mvn-test.log | grep -v -E 'Tests run:|Re-run Maven|For more information|Help 1|-> \[Help|^\[ERROR\] *$|To see the full stack' \
+            | head -8 | while IFS= read -r line; do echo "::error title=Maven::${line//%/%25}"; done || true
 
   docker:
     name: Docker образ и стартиране
@@ -41,7 +77,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Изграждане на Docker образа
         run: docker build -t langforu .
